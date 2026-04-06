@@ -1,0 +1,1374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MoodScreen</title>
+<script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@babel/standalone/babel.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg-app: #1f2326;
+    --bg-sidebar: #282a2d;
+    --bg-topbar: #3f4245;
+    --bg-card: #282828;
+    --bg-card-hover: #333;
+    --bg-input: #1a1a1a;
+    --accent: #e5a00d;
+    --accent-hover: #f5b020;
+    --text-primary: #ffffff;
+    --text-secondary: #999999;
+    --text-muted: #666666;
+    --border: rgba(255,255,255,0.1);
+    --font: 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --sidebar-width: 240px;
+    --topbar-height: 56px;
+  }
+
+  html { font-size: 16px; }
+  body {
+    background: var(--bg-app);
+    color: var(--text-primary);
+    font-family: var(--font);
+    overflow-x: hidden;
+    min-height: 100vh;
+  }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.25); }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes modalIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  /* ─── Top Navigation Bar ─── */
+  .topbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: var(--topbar-height);
+    background: var(--bg-topbar);
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    z-index: 100;
+    gap: 16px;
+    box-shadow: 0 1px 0 rgba(0,0,0,0.3);
+  }
+  .topbar-back {
+    width: 32px;
+    height: 32px;
+    border-radius: 4px;
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.15s, background 0.15s;
+  }
+  .topbar-back:hover { color: var(--text-primary); background: rgba(255,255,255,0.1); }
+  .topbar-logo {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    margin-right: 8px;
+  }
+  .topbar-logo-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 4px;
+    background: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 700;
+    color: #000;
+  }
+  .topbar-search {
+    flex: 1;
+    max-width: 360px;
+    position: relative;
+  }
+  .topbar-search input {
+    width: 100%;
+    background: var(--bg-input);
+    border: 1px solid transparent;
+    border-radius: 4px;
+    padding: 7px 12px 7px 34px;
+    font-family: var(--font);
+    font-size: 13px;
+    color: var(--text-primary);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .topbar-search input::placeholder { color: var(--text-muted); }
+  .topbar-search input:focus { border-color: var(--accent); }
+  .topbar-search-icon {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    font-size: 14px;
+    pointer-events: none;
+  }
+  .topbar-spacer { flex: 1; }
+  .topbar-user {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--bg-sidebar);
+    border: 2px solid var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  /* ─── Sidebar ─── */
+  .sidebar {
+    position: fixed;
+    top: var(--topbar-height);
+    left: 0;
+    bottom: 0;
+    width: var(--sidebar-width);
+    background: var(--bg-sidebar);
+    overflow-y: auto;
+    z-index: 50;
+    padding: 12px 0;
+    border-right: 1px solid rgba(0,0,0,0.3);
+  }
+  .sidebar-section-label {
+    padding: 16px 16px 6px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+  }
+  .sidebar-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    border-left: 3px solid transparent;
+  }
+  .sidebar-item:hover {
+    background: rgba(255,255,255,0.06);
+    color: var(--text-primary);
+  }
+  .sidebar-item.active {
+    color: var(--text-primary);
+    border-left-color: var(--accent);
+    background: rgba(229, 160, 13, 0.08);
+  }
+  .sidebar-icon { font-size: 16px; width: 20px; text-align: center; }
+  .sidebar-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 8px 16px;
+  }
+
+  /* ─── Content Area ─── */
+  .content {
+    margin-left: var(--sidebar-width);
+    margin-top: var(--topbar-height);
+    min-height: calc(100vh - var(--topbar-height));
+  }
+
+  /* ─── Hero Banner ─── */
+  .hero {
+    position: relative;
+    height: 460px;
+    overflow: hidden;
+    display: flex;
+    align-items: flex-end;
+  }
+  .hero-bg {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 120px;
+    opacity: 0.2;
+  }
+  .hero-gradient-left {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to right, rgba(31,35,38,0.95) 0%, rgba(31,35,38,0.6) 40%, transparent 70%);
+  }
+  .hero-gradient-bottom {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 200px;
+    background: linear-gradient(to top, var(--bg-app) 0%, transparent 100%);
+  }
+  .hero-content {
+    position: relative;
+    z-index: 2;
+    padding: 0 40px 40px;
+    max-width: 600px;
+  }
+  .hero-title {
+    font-size: 42px;
+    font-weight: 700;
+    line-height: 1.1;
+    margin-bottom: 8px;
+  }
+  .hero-meta {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .hero-meta-dot { color: var(--text-muted); }
+  .hero-desc {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-bottom: 20px;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .hero-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+  .btn-play {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 24px;
+    background: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: 4px;
+    font-family: var(--font);
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .btn-play:hover { background: var(--accent-hover); }
+  .btn-secondary {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    background: rgba(255,255,255,0.15);
+    color: var(--text-primary);
+    border: none;
+    border-radius: 4px;
+    font-family: var(--font);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .btn-secondary:hover { background: rgba(255,255,255,0.25); }
+
+  /* ─── Mood Selector (Home) ─── */
+  .mood-selector {
+    padding: 24px 40px 0;
+    animation: fadeIn 0.4s ease both;
+  }
+  .feeling-prompt {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    color: var(--text-primary);
+  }
+  .feeling-input-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    max-width: 500px;
+  }
+  .feeling-input {
+    flex: 1;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 9px 14px;
+    font-family: var(--font);
+    font-size: 13px;
+    color: var(--text-primary);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .feeling-input::placeholder { color: var(--text-muted); }
+  .feeling-input:focus { border-color: var(--accent); }
+  .feeling-go {
+    padding: 9px 20px;
+    background: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: 4px;
+    font-family: var(--font);
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s;
+    white-space: nowrap;
+  }
+  .feeling-go:hover { background: var(--accent-hover); }
+  .mood-history-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+  }
+  .mood-history-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    margin-right: 4px;
+  }
+  .mood-history-pill {
+    padding: 4px 12px;
+    border-radius: 4px;
+    background: rgba(255,255,255,0.08);
+    font-size: 12px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.15s;
+    border: 1px solid transparent;
+  }
+  .mood-history-pill:hover {
+    background: rgba(255,255,255,0.14);
+    color: var(--text-primary);
+    border-color: var(--border);
+  }
+
+  /* ─── Mood Grid ─── */
+  .mood-grid-section {
+    padding: 0 40px 32px;
+  }
+  .hub-title {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 16px;
+  }
+  .hub-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .hub-more {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: color 0.15s;
+  }
+  .hub-more:hover { color: var(--accent); }
+  .mood-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 12px;
+  }
+  .mood-card {
+    position: relative;
+    border-radius: 6px;
+    padding: 20px;
+    cursor: pointer;
+    overflow: hidden;
+    min-height: 130px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .mood-card:hover {
+    transform: scale(1.03);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    z-index: 5;
+  }
+  .mood-card-emoji { font-size: 28px; margin-bottom: 10px; }
+  .mood-card-label {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 3px;
+  }
+  .mood-card-desc {
+    font-size: 12px;
+    color: rgba(255,255,255,0.6);
+    font-weight: 400;
+    line-height: 1.4;
+  }
+
+  /* ─── Hub Row (Horizontal Poster Lane) ─── */
+  .hub-row-section {
+    padding: 0 0 24px;
+  }
+  .hub-row-header {
+    padding: 0 40px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .hub-row-title {
+    font-size: 18px;
+    font-weight: 700;
+  }
+  .hub-row-count {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-weight: 400;
+  }
+  .hub-row-scroll {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    padding: 4px 40px 8px;
+    scroll-behavior: smooth;
+    scrollbar-width: none;
+  }
+  .hub-row-scroll::-webkit-scrollbar { display: none; }
+
+  /* ─── Poster Card (Plex-style) ─── */
+  .poster-card {
+    flex-shrink: 0;
+    width: 160px;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    position: relative;
+  }
+  .poster-card:hover {
+    transform: scale(1.05);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    z-index: 10;
+  }
+  .poster-img-wrap {
+    position: relative;
+    width: 160px;
+    height: 240px;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 8px;
+    background: var(--bg-card);
+  }
+  .poster-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 40px;
+  }
+  .poster-placeholder-title {
+    font-size: 11px;
+    font-weight: 600;
+    text-align: center;
+    padding: 0 10px;
+    line-height: 1.3;
+    color: rgba(255,255,255,0.6);
+  }
+  /* Play overlay on hover */
+  .poster-play-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s;
+    background: rgba(0,0,0,0.3);
+  }
+  .poster-card:hover .poster-play-overlay { opacity: 1; }
+  .poster-play-btn {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.6);
+    border: 2px solid rgba(255,255,255,0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 18px;
+  }
+  /* Mood relevance badge */
+  .poster-relevance {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    background: rgba(0,0,0,0.7);
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent);
+  }
+  /* Mood angle tags on hover */
+  .poster-angles {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 24px 8px 8px;
+    background: linear-gradient(transparent, rgba(0,0,0,0.85));
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .poster-card:hover .poster-angles { opacity: 1; }
+  .poster-angle-tag {
+    padding: 2px 6px;
+    border-radius: 3px;
+    background: rgba(255,255,255,0.15);
+    font-size: 10px;
+    color: rgba(255,255,255,0.85);
+  }
+  /* Progress bar at bottom of poster */
+  .poster-progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: rgba(255,255,255,0.2);
+  }
+  .poster-progress-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 0 2px 2px 0;
+  }
+  .poster-title {
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 2px;
+  }
+  .poster-meta {
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-weight: 400;
+  }
+
+  /* ─── Explore View ─── */
+  .explore-header {
+    padding: 24px 40px 16px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    animation: fadeIn 0.3s ease both;
+  }
+  .explore-emoji { font-size: 32px; }
+  .explore-title-group {}
+  .explore-title {
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1.1;
+  }
+  .explore-desc {
+    font-size: 14px;
+    color: var(--text-secondary);
+    font-weight: 400;
+    margin-top: 2px;
+  }
+
+  /* Blend bar */
+  .blend-bar {
+    padding: 0 40px 16px;
+    animation: fadeIn 0.3s ease 0.1s both;
+  }
+  .blend-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+  .blend-options { display: flex; gap: 8px; flex-wrap: wrap; }
+  .blend-chip {
+    padding: 5px 14px;
+    border-radius: 4px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid transparent;
+    font-size: 12px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: var(--font);
+    font-weight: 500;
+  }
+  .blend-chip:hover {
+    background: rgba(255,255,255,0.14);
+    color: var(--text-primary);
+  }
+  .blend-chip.active {
+    background: rgba(229, 160, 13, 0.15);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* Adjacent moods section */
+  .adjacent-section {
+    padding: 24px 40px;
+    border-top: 1px solid var(--border);
+    margin-top: 16px;
+  }
+  .adjacent-title {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 16px;
+  }
+  .adjacent-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 10px;
+  }
+  .adjacent-card {
+    padding: 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .adjacent-card:hover {
+    transform: scale(1.03);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  }
+  .adjacent-emoji { font-size: 20px; margin-bottom: 6px; }
+  .adjacent-label { font-size: 14px; font-weight: 700; margin-bottom: 2px; }
+  .adjacent-desc { font-size: 11px; color: rgba(255,255,255,0.5); }
+
+  /* ─── Modal (Pre-Play Detail Page) ─── */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+  }
+  .modal-content {
+    background: var(--bg-app);
+    border-radius: 8px;
+    max-width: 720px;
+    width: 100%;
+    max-height: 85vh;
+    overflow-y: auto;
+    animation: modalIn 0.25s ease both;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+    position: relative;
+  }
+  .modal-hero {
+    position: relative;
+    height: 280px;
+    overflow: hidden;
+    border-radius: 8px 8px 0 0;
+  }
+  .modal-hero-bg {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 80px;
+    opacity: 0.3;
+  }
+  .modal-hero-gradient {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to right, rgba(31,35,38,0.9) 0%, rgba(31,35,38,0.5) 50%, transparent 100%);
+  }
+  .modal-hero-gradient-bottom {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 120px;
+    background: linear-gradient(to top, var(--bg-app), transparent);
+  }
+  .modal-close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 32px;
+    height: 32px;
+    border-radius: 4px;
+    background: rgba(0,0,0,0.5);
+    border: none;
+    color: var(--text-primary);
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s;
+    z-index: 2;
+  }
+  .modal-close:hover { background: rgba(0,0,0,0.7); }
+  .modal-body {
+    padding: 0 32px 32px;
+    margin-top: -48px;
+    position: relative;
+    z-index: 1;
+  }
+  .modal-title {
+    font-size: 32px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    line-height: 1.1;
+  }
+  .modal-meta {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .modal-meta-badge {
+    border: 1px solid var(--text-muted);
+    padding: 1px 5px;
+    border-radius: 2px;
+    font-size: 11px;
+    color: var(--text-secondary);
+  }
+  .modal-mood-fit {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 4px;
+    background: rgba(229, 160, 13, 0.12);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent);
+    margin-bottom: 16px;
+  }
+  .modal-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+    margin-top: 20px;
+  }
+  .modal-synopsis {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+  .modal-angles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .modal-angle-tag {
+    padding: 4px 10px;
+    border-radius: 4px;
+    background: rgba(255,255,255,0.08);
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+  .modal-cast {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+  .modal-streaming {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .modal-stream-btn {
+    padding: 6px 14px;
+    border-radius: 4px;
+    background: rgba(255,255,255,0.1);
+    border: none;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: background 0.15s;
+    font-family: var(--font);
+  }
+  .modal-stream-btn:hover { background: rgba(255,255,255,0.18); }
+  .modal-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+  }
+  .fit-rating {
+    display: flex;
+    gap: 4px;
+    margin-top: 8px;
+  }
+  .fit-star {
+    width: 28px;
+    height: 28px;
+    border-radius: 4px;
+    background: rgba(255,255,255,0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.1s;
+    color: var(--text-muted);
+    border: none;
+  }
+  .fit-star:hover, .fit-star.active {
+    background: rgba(229, 160, 13, 0.2);
+    color: var(--accent);
+  }
+
+  @media (max-width: 900px) {
+    .sidebar { display: none; }
+    .content { margin-left: 0; }
+    .hero { height: 360px; }
+    .hero-title { font-size: 28px; }
+  }
+  @media (max-width: 600px) {
+    .mood-grid { grid-template-columns: 1fr; }
+    .hub-row-scroll, .mood-selector, .mood-grid-section,
+    .hub-row-header, .explore-header, .blend-bar,
+    .adjacent-section { padding-left: 16px; padding-right: 16px; }
+    .hero-content { padding: 0 16px 24px; }
+    .modal-backdrop { padding: 0; }
+    .modal-content { max-height: 100vh; border-radius: 0; }
+    .poster-card { width: 130px; }
+    .poster-img-wrap { width: 130px; height: 195px; }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback } = React;
+
+// ─── Data ────────────────────────────────────────────────────────────
+
+const MOODS = [
+  { id: 'melancholy', label: 'Melancholy', emoji: '🌧', description: 'Beautiful sadness that makes you feel alive', gradient: ['#1a1a2e','#16213e','#0f3460'], accentColor: '#4a90d9', adjacentMoods: ['nostalgic','contemplative','romantic'] },
+  { id: 'cozy', label: 'Cozy Night', emoji: '🛋', description: 'Warm stories that feel like a blanket', gradient: ['#2d1b00','#3d2200','#4a2800'], accentColor: '#d4915c', adjacentMoods: ['nostalgic','lighthearted','romantic'] },
+  { id: 'adrenaline', label: 'Adrenaline', emoji: '⚡', description: 'Heart-pounding, edge-of-your-seat intensity', gradient: ['#2d0a0a','#3d0f0f','#4a1212'], accentColor: '#e74c3c', adjacentMoods: ['dark','contemplative','adventurous'] },
+  { id: 'nostalgic', label: 'Nostalgic', emoji: '📻', description: "A gentle ache for times you can't return to", gradient: ['#1a1520','#2a1f30','#3a2940'], accentColor: '#c39bd3', adjacentMoods: ['melancholy','cozy','romantic'] },
+  { id: 'lighthearted', label: 'Lighthearted', emoji: '☀️', description: 'Pure joy, belly laughs, and warm smiles', gradient: ['#1a2a0a','#223a0f','#2a4a14'], accentColor: '#82e67a', adjacentMoods: ['cozy','adventurous','romantic'] },
+  { id: 'dark', label: 'Into the Dark', emoji: '🌑', description: 'Unsettling, twisted, and deeply compelling', gradient: ['#0a0a14','#0f0f1e','#141428'], accentColor: '#7f8c8d', adjacentMoods: ['adrenaline','contemplative','melancholy'] },
+  { id: 'contemplative', label: 'Contemplative', emoji: '🪷', description: 'Slow, meditative stories that reward patience', gradient: ['#0a1a1a','#0f2a2a','#143a3a'], accentColor: '#76d7c4', adjacentMoods: ['melancholy','nostalgic','dark'] },
+  { id: 'romantic', label: 'Romantic', emoji: '🌹', description: 'Love in all its messy, beautiful forms', gradient: ['#2d0a1e','#3d0f28','#4a1432'], accentColor: '#e091b5', adjacentMoods: ['nostalgic','melancholy','lighthearted'] },
+  { id: 'adventurous', label: 'Adventurous', emoji: '🗺', description: 'Vast worlds, grand quests, and wonder', gradient: ['#0a1a2d','#0f2a3d','#143a4a'], accentColor: '#5dade2', adjacentMoods: ['adrenaline','lighthearted','contemplative'] },
+];
+
+const MEDIA = {
+  melancholy: [
+    { id:'m1', title:'Eternal Sunshine of the Spotless Mind', kind:'movie', year:2004, dur:108, rel:0.97, angles:['memory erasure as metaphor','love lost and found','surreal visuals'], emoji:'🧠', synopsis:'When Joel discovers that his girlfriend has had their relationship erased from her memory, he decides to undergo the same procedure.', cast:['Jim Carrey','Kate Winslet','Kirsten Dunst'], streaming:['Netflix','Peacock'], progress:0.65 },
+    { id:'m2', title:'Lost in Translation', kind:'movie', year:2003, dur:102, rel:0.94, angles:['isolation in a crowd','quiet connection','Tokyo neon glow'], emoji:'🗼', synopsis:'A faded movie star and a neglected young woman form an unlikely bond in Tokyo.', cast:['Bill Murray','Scarlett Johansson'], streaming:['Amazon Prime'], progress:0 },
+    { id:'m3', title:'Her', kind:'movie', year:2013, dur:126, rel:0.92, angles:['loneliness in the future','AI intimacy','pastel melancholy'], emoji:'💌', synopsis:'A lonely writer develops an unlikely relationship with an operating system designed to meet his every need.', cast:['Joaquin Phoenix','Scarlett Johansson'], streaming:['Max'], progress:0 },
+    { id:'m4', title:'Aftersun', kind:'movie', year:2022, dur:102, rel:0.91, angles:['fading memories','father-daughter bond','sun-drenched sadness'], emoji:'🌅', synopsis:'Sophie reflects on a shared holiday with her father twenty years earlier.', cast:['Paul Mescal','Frankie Corio'], streaming:['MUBI'], progress:0.3 },
+    { id:'m5', title:'Normal People', kind:'tv', year:2020, dur:null, rel:0.89, angles:['class divide','inarticulate love','Irish rain'], emoji:'💔', synopsis:'Connell and Marianne navigate love from secondary school through university.', cast:['Paul Mescal','Daisy Edgar-Jones'], streaming:['Hulu'], progress:0 },
+    { id:'m6', title:'Moonlight', kind:'movie', year:2016, dur:111, rel:0.88, angles:['identity formation','tenderness amid hardship','blue-drenched cinematography'], emoji:'🌊', synopsis:'A chronicle of the childhood, adolescence and adulthood of a young Black man in Miami.', cast:['Mahershala Ali','Trevante Rhodes'], streaming:['Netflix'], progress:0 },
+    { id:'m7', title:'The Leftovers', kind:'tv', year:2014, dur:null, rel:0.86, angles:['existential grief','spiritual searching','haunting score'], emoji:'🕊', synopsis:'Three years after 2% of the world vanished, a small town grapples with loss.', cast:['Justin Theroux','Carrie Coon'], streaming:['Max'], progress:0 },
+  ],
+  cozy: [
+    { id:'c1', title:'The Grand Budapest Hotel', kind:'movie', year:2014, dur:99, rel:0.95, angles:['whimsical set design','found family','candy-colored worlds'], emoji:'🏨', synopsis:'The adventures of a legendary concierge and the lobby boy who becomes his most trusted friend.', cast:['Ralph Fiennes','Tony Revolori','Saoirse Ronan'], streaming:['Disney+'], progress:0 },
+    { id:'c2', title:'My Neighbor Totoro', kind:'movie', year:1988, dur:86, rel:0.94, angles:['childhood wonder','forest spirits','gentle animation'], emoji:'🌳', synopsis:'Two girls discover the surrounding trees are inhabited by magical creatures.', cast:['Noriko Hidaka','Chika Sakamoto'], streaming:['Max'], progress:1 },
+    { id:'c3', title:'Ted Lasso', kind:'tv', year:2020, dur:null, rel:0.93, angles:['relentless optimism','found family','British charm'], emoji:'⚽', synopsis:'An American football coach is hired to manage a British soccer team.', cast:['Jason Sudeikis','Hannah Waddingham'], streaming:['Apple TV+'], progress:0.4 },
+    { id:'c4', title:'Amélie', kind:'movie', year:2001, dur:122, rel:0.91, angles:['Parisian whimsy','small acts of kindness','saturated color'], emoji:'🥐', synopsis:'A naive girl in Paris decides to help those around her and discovers love.', cast:['Audrey Tautou','Mathieu Kassovitz'], streaming:['Amazon Prime'], progress:0 },
+    { id:'c5', title:'Paddington 2', kind:'movie', year:2017, dur:103, rel:0.90, angles:['pure-hearted hero','absurd comedy','London charm'], emoji:'🐻', synopsis:'Paddington must track down a thief when the perfect gift for his Aunt Lucy is stolen.', cast:['Ben Whishaw','Hugh Grant'], streaming:['Netflix'], progress:0 },
+  ],
+  adrenaline: [
+    { id:'a1', title:'Mad Max: Fury Road', kind:'movie', year:2015, dur:120, rel:0.98, angles:['relentless chase','practical stunts','desert apocalypse'], emoji:'🔥', synopsis:'A woman rebels against a tyrannical ruler in search of her homeland.', cast:['Tom Hardy','Charlize Theron'], streaming:['Max'], progress:0 },
+    { id:'a2', title:'Sicario', kind:'movie', year:2015, dur:121, rel:0.93, angles:['border tension','moral gray zones','suffocating dread'], emoji:'🎯', synopsis:'An FBI agent is enlisted in the escalating war against drugs at the border.', cast:['Emily Blunt','Benicio del Toro','Josh Brolin'], streaming:['Netflix'], progress:0 },
+    { id:'a3', title:'Squid Game', kind:'tv', year:2021, dur:null, rel:0.91, angles:['deadly stakes','childhood games twisted','social commentary'], emoji:'🦑', synopsis:'Cash-strapped players compete in children\'s games for a deadly prize.', cast:['Lee Jung-jae','Park Hae-soo'], streaming:['Netflix'], progress:0.8 },
+    { id:'a4', title:'The Raid', kind:'movie', year:2011, dur:101, rel:0.90, angles:['nonstop combat','vertical tension','martial arts mastery'], emoji:'🥊', synopsis:'A SWAT team becomes trapped in a tenement run by a ruthless mobster.', cast:['Iko Uwais','Joe Taslim'], streaming:['Amazon Prime'], progress:0 },
+    { id:'a5', title:'Uncut Gems', kind:'movie', year:2019, dur:135, rel:0.88, angles:['anxiety as entertainment','gambling spiral','manic energy'], emoji:'💎', synopsis:'A jeweler makes high-stakes bets that could lead to fortune or ruin.', cast:['Adam Sandler','Julia Fox'], streaming:['Netflix'], progress:0 },
+  ],
+  nostalgic: [
+    { id:'n1', title:'Stand By Me', kind:'movie', year:1986, dur:89, rel:0.96, angles:['boyhood friendship','summer adventure','coming-of-age innocence'], emoji:'🚶', synopsis:'Four boys set out on a hike to find a missing teenager, but find themselves.', cast:['Wil Wheaton','River Phoenix'], streaming:['Amazon Prime'], progress:0 },
+    { id:'n2', title:'Cinema Paradiso', kind:'movie', year:1988, dur:155, rel:0.95, angles:['love of cinema','Sicilian village life','bittersweet memory'], emoji:'🎬', synopsis:'A filmmaker recalls falling in love with movies at his village cinema.', cast:['Philippe Noiret','Salvatore Cascio'], streaming:['MUBI'], progress:0 },
+    { id:'n3', title:'Stranger Things', kind:'tv', year:2016, dur:null, rel:0.90, angles:['80s Americana','Spielberg homage','small-town mystery'], emoji:'🚲', synopsis:'A boy disappears and his friends confront supernatural forces.', cast:['Millie Bobby Brown','Finn Wolfhard'], streaming:['Netflix'], progress:0.9 },
+    { id:'n4', title:'Before Sunrise', kind:'movie', year:1995, dur:101, rel:0.89, angles:['European wandering','love across decades','pure conversation'], emoji:'🚂', synopsis:'Two strangers meet on a train and spend one evening walking through Vienna.', cast:['Ethan Hawke','Julie Delpy'], streaming:['Max'], progress:0 },
+  ],
+  lighthearted: [
+    { id:'l1', title:'Everything Everywhere All at Once', kind:'movie', year:2022, dur:139, rel:0.93, angles:['absurdist humor','immigrant family love','multiverse chaos'], emoji:'🥯', synopsis:'An aging Chinese immigrant is swept up in an insane adventure across universes.', cast:['Michelle Yeoh','Ke Huy Quan'], streaming:['Amazon Prime'], progress:0 },
+    { id:'l2', title:'The Good Place', kind:'tv', year:2016, dur:null, rel:0.92, angles:['philosophy made fun','afterlife comedy','moral growth'], emoji:'😇', synopsis:'A woman wakes up in the afterlife and is determined to become a better person.', cast:['Kristen Bell','Ted Danson'], streaming:['Netflix'], progress:0 },
+    { id:'l3', title:'Hunt for the Wilderpeople', kind:'movie', year:2016, dur:101, rel:0.91, angles:['New Zealand bush','mismatched duo','deadpan humor'], emoji:'🌿', synopsis:'A city kid and his grumpy foster uncle become subjects of a manhunt in the bush.', cast:['Julian Dennison','Sam Neill'], streaming:['Amazon Prime'], progress:0 },
+    { id:'l4', title:"Schitt's Creek", kind:'tv', year:2015, dur:null, rel:0.90, angles:['family redemption','small-town warmth','character growth'], emoji:'🌹', synopsis:'A wealthy family suddenly finds themselves broke and living in a small town.', cast:['Eugene Levy',"Catherine O'Hara",'Dan Levy'], streaming:['Netflix'], progress:0.5 },
+  ],
+  dark: [
+    { id:'d1', title:'Se7en', kind:'movie', year:1995, dur:127, rel:0.96, angles:['rain-soaked dread','moral corruption','unforgettable ending'], emoji:'📦', synopsis:'Two detectives hunt a serial killer who uses the seven deadly sins as motives.', cast:['Brad Pitt','Morgan Freeman'], streaming:['Max'], progress:0 },
+    { id:'d2', title:'True Detective S1', kind:'tv', year:2014, dur:null, rel:0.95, angles:['cosmic horror','Louisiana Gothic','philosophical nihilism'], emoji:'🌀', synopsis:'Two detectives hunt a serial killer across seventeen years in Louisiana.', cast:['Matthew McConaughey','Woody Harrelson'], streaming:['Max'], progress:0 },
+    { id:'d3', title:'Hereditary', kind:'movie', year:2018, dur:127, rel:0.93, angles:['family horror','creeping dread',"Toni Collette's scream"], emoji:'🏠', synopsis:'A grieving family is haunted by disturbing occurrences after their grandmother dies.', cast:['Toni Collette','Alex Wolff'], streaming:['Paramount+'], progress:0 },
+    { id:'d4', title:'Mindhunter', kind:'tv', year:2017, dur:null, rel:0.90, angles:['psychological profiles','FBI procedural','unsettling interviews'], emoji:'🧩', synopsis:'FBI agents develop criminal profiling by interviewing imprisoned serial killers.', cast:['Jonathan Groff','Holt McCallany'], streaming:['Netflix'], progress:0.6 },
+  ],
+  contemplative: [
+    { id:'ct1', title:'Stalker', kind:'movie', year:1979, dur:163, rel:0.97, angles:['spiritual journey','decaying beauty','unbearable patience rewarded'], emoji:'🚪', synopsis:'A guide leads two men through a mysterious restricted site to find a wish-granting room.', cast:['Alexander Kaidanovsky'], streaming:['Criterion'], progress:0 },
+    { id:'ct2', title:'Arrival', kind:'movie', year:2016, dur:116, rel:0.94, angles:['linguistic puzzle','non-linear time','quiet devastation'], emoji:'🛸', synopsis:'A linguist communicates with extraterrestrials and finds their language changes everything.', cast:['Amy Adams','Jeremy Renner'], streaming:['Paramount+'], progress:0 },
+    { id:'ct3', title:'Severance', kind:'tv', year:2022, dur:null, rel:0.91, angles:['corporate dystopia','identity split','slow-burn mystery'], emoji:'🪪', synopsis:'Employees agree to a procedure that separates their work and personal memories.', cast:['Adam Scott','Britt Lower'], streaming:['Apple TV+'], progress:0.7 },
+    { id:'ct4', title:'Paterson', kind:'movie', year:2016, dur:118, rel:0.89, angles:['daily routine as poetry','quiet observation','Jarmusch stillness'], emoji:'📝', synopsis:'A bus driver writes poetry and finds beauty in the ordinary.', cast:['Adam Driver','Golshifteh Farahani'], streaming:['Amazon Prime'], progress:0 },
+  ],
+  romantic: [
+    { id:'r1', title:'In the Mood for Love', kind:'movie', year:2000, dur:98, rel:0.98, angles:['unspoken desire','Hong Kong rain','Shigeru Umebayashi score'], emoji:'🌺', synopsis:'Two neighbors discover their spouses are having an affair and develop a complicated bond.', cast:['Tony Leung','Maggie Cheung'], streaming:['Criterion'], progress:0 },
+    { id:'r2', title:'Portrait of a Lady on Fire', kind:'movie', year:2019, dur:122, rel:0.95, angles:['the female gaze','forbidden love','art as devotion'], emoji:'🔥', synopsis:'A painter and her subject develop an intense attraction on a remote island.', cast:['Noémie Merlant','Adèle Haenel'], streaming:['Hulu'], progress:0 },
+    { id:'r3', title:'Fleabag', kind:'tv', year:2016, dur:null, rel:0.91, angles:['fourth-wall breaking','messy love','devastating humor'], emoji:'🍸', synopsis:'A dry-witted woman navigates love, loss, and family.', cast:['Phoebe Waller-Bridge','Andrew Scott'], streaming:['Amazon Prime'], progress:0 },
+    { id:'r4', title:'Call Me by Your Name', kind:'movie', year:2017, dur:132, rel:0.90, angles:['Italian summer heat','first love intensity','Sufjan Stevens scoring'], emoji:'🍑', synopsis:'In 1980s Italy, a romance blossoms between a teenager and his father\'s research assistant.', cast:['Timothée Chalamet','Armie Hammer'], streaming:['Netflix'], progress:0 },
+  ],
+  adventurous: [
+    { id:'ad1', title:'The Lord of the Rings', kind:'movie', year:2001, dur:558, rel:0.97, angles:['epic quest','fellowship bonds','New Zealand grandeur'], emoji:'💍', synopsis:'A hobbit must journey across Middle-earth to destroy a ring of immense power.', cast:['Elijah Wood','Ian McKellen','Viggo Mortensen'], streaming:['Max'], progress:0.2 },
+    { id:'ad2', title:'Spirited Away', kind:'movie', year:2001, dur:125, rel:0.94, angles:['spirit world immersion','brave heroine','Miyazaki wonder'], emoji:'🏯', synopsis:'A young girl becomes trapped in a world of spirits and must find the courage to free herself.', cast:['Rumi Hiiragi','Miyu Irino'], streaming:['Max'], progress:0 },
+    { id:'ad3', title:'Arcane', kind:'tv', year:2021, dur:null, rel:0.90, angles:['painted animation','sister bond','class warfare'], emoji:'⚙️', synopsis:'Two sisters fight on rival sides of a war between magic technologies.', cast:['Hailee Steinfeld','Ella Purnell'], streaming:['Netflix'], progress:0 },
+    { id:'ad4', title:'Raiders of the Lost Ark', kind:'movie', year:1981, dur:115, rel:0.88, angles:['globe-trotting pulp','practical action','iconic hero'], emoji:'🤠', synopsis:'Indiana Jones races against Nazis to find the Ark of the Covenant.', cast:['Harrison Ford','Karen Allen'], streaming:['Paramount+'], progress:0 },
+  ],
+};
+
+const MOOD_HISTORY = ['melancholy','cozy','contemplative','dark','nostalgic'];
+
+// ─── Components ──────────────────────────────────────────────────────
+
+function Topbar({ screen, onHome, searchValue, onSearch }) {
+  return (
+    <div className="topbar">
+      {screen === 'explore' && (
+        <button className="topbar-back" onClick={onHome} title="Back">‹</button>
+      )}
+      <div className="topbar-logo" onClick={onHome}>
+        <div className="topbar-logo-icon">▶</div>
+        MoodScreen
+      </div>
+      <div className="topbar-search">
+        <span className="topbar-search-icon">⌕</span>
+        <input
+          placeholder="How are you feeling?"
+          value={searchValue}
+          onChange={e => onSearch(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') e.target.blur(); }}
+        />
+      </div>
+      <div className="topbar-spacer" />
+      <div className="topbar-user">S</div>
+    </div>
+  );
+}
+
+function Sidebar({ screen, activeMood, onMoodSelect }) {
+  return (
+    <div className="sidebar">
+      <div className="sidebar-section-label">Discover</div>
+      <div className={`sidebar-item ${screen==='home'?'active':''}`} onClick={() => onMoodSelect(null)}>
+        <span className="sidebar-icon">◈</span> Mood Browse
+      </div>
+      <div className="sidebar-item">
+        <span className="sidebar-icon">★</span> Recommended
+      </div>
+      <div className="sidebar-item">
+        <span className="sidebar-icon">▣</span> New Releases
+      </div>
+      <div className="sidebar-divider" />
+      <div className="sidebar-section-label">Moods</div>
+      {MOODS.map(m => (
+        <div
+          className={`sidebar-item ${activeMood===m.id?'active':''}`}
+          key={m.id}
+          onClick={() => onMoodSelect(m.id)}
+        >
+          <span className="sidebar-icon">{m.emoji}</span> {m.label}
+        </div>
+      ))}
+      <div className="sidebar-divider" />
+      <div className="sidebar-section-label">Library</div>
+      <div className="sidebar-item">
+        <span className="sidebar-icon">♡</span> Collection
+      </div>
+      <div className="sidebar-item">
+        <span className="sidebar-icon">✓</span> Watch History
+      </div>
+    </div>
+  );
+}
+
+function HeroBanner({ mood }) {
+  const featured = MEDIA[mood.id]?.[0];
+  if (!featured) return null;
+  return (
+    <div className="hero" style={{
+      background: `linear-gradient(135deg, ${mood.gradient[0]}, ${mood.gradient[1]}, ${mood.gradient[2]})`,
+    }}>
+      <div className="hero-bg">{featured.emoji}</div>
+      <div className="hero-gradient-left" />
+      <div className="hero-gradient-bottom" />
+      <div className="hero-content">
+        <div className="hero-title">{featured.title}</div>
+        <div className="hero-meta">
+          <span>{featured.year}</span>
+          <span className="hero-meta-dot">·</span>
+          <span>{featured.kind === 'tv' ? 'TV Series' : `${featured.dur} min`}</span>
+          <span className="hero-meta-dot">·</span>
+          <span style={{color:'var(--accent)',fontWeight:600}}>{Math.round(featured.rel*100)}% mood fit</span>
+        </div>
+        <div className="hero-desc">{featured.synopsis}</div>
+        <div className="hero-actions">
+          <button className="btn-play">▶ Play</button>
+          <button className="btn-secondary">+ Collection</button>
+          <button className="btn-secondary">⋯</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PosterCard({ item, onClick, style }) {
+  return (
+    <div className="poster-card" onClick={() => onClick(item)} style={style}>
+      <div className="poster-img-wrap">
+        <div className="poster-placeholder" style={{
+          background: `linear-gradient(160deg, #1a1a2e, var(--bg-card))`,
+        }}>
+          <span>{item.emoji}</span>
+          <span className="poster-placeholder-title">{item.title}</span>
+        </div>
+        <div className="poster-play-overlay">
+          <div className="poster-play-btn">▶</div>
+        </div>
+        <div className="poster-relevance">{Math.round(item.rel*100)}%</div>
+        <div className="poster-angles">
+          {item.angles.slice(0,2).map((a,i) => (
+            <span className="poster-angle-tag" key={i}>{a}</span>
+          ))}
+        </div>
+        {item.progress > 0 && item.progress < 1 && (
+          <div className="poster-progress">
+            <div className="poster-progress-fill" style={{width:`${item.progress*100}%`}} />
+          </div>
+        )}
+      </div>
+      <div className="poster-title">{item.title}</div>
+      <div className="poster-meta">{item.year} · {item.kind==='tv'?'TV Series':`${item.dur}m`}</div>
+    </div>
+  );
+}
+
+function HubRow({ title, items, count, onItemClick }) {
+  return (
+    <div className="hub-row-section">
+      <div className="hub-row-header">
+        <div style={{display:'flex',alignItems:'baseline',gap:10}}>
+          <span className="hub-row-title">{title}</span>
+          {count && <span className="hub-row-count">{count}</span>}
+        </div>
+        <span className="hub-more">All ›</span>
+      </div>
+      <div className="hub-row-scroll">
+        {items.map((item,i) => (
+          <PosterCard key={item.id} item={item} onClick={onItemClick}
+            style={{animation:`fadeIn 0.3s ease ${i*0.04}s both`}} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function BlendBar({ currentMood, onBlend, active }) {
+  const current = MOODS.find(m => m.id === currentMood);
+  const adjacentIds = current?.adjacentMoods || [];
+  return (
+    <div className="blend-bar">
+      <div className="blend-label">Blend with</div>
+      <div className="blend-options">
+        {adjacentIds.map(id => {
+          const mood = MOODS.find(m => m.id === id);
+          return mood ? (
+            <button className={`blend-chip ${active===id?'active':''}`} key={id}
+              onClick={() => onBlend(active===id?null:id)}>
+              {mood.emoji} {mood.label}
+            </button>
+          ) : null;
+        })}
+      </div>
+    </div>
+  );
+}
+
+function HomeScreen({ onMoodSelect, onItemClick, searchText }) {
+  // If search text matches a mood, show that
+  const matchMood = (text) => {
+    const l = text.toLowerCase();
+    if (l.includes('sad')||l.includes('cry')||l.includes('rain')) return 'melancholy';
+    if (l.includes('cozy')||l.includes('warm')||l.includes('comfort')) return 'cozy';
+    if (l.includes('thrill')||l.includes('fast')||l.includes('intense')) return 'adrenaline';
+    if (l.includes('nostalg')||l.includes('childhood')||l.includes('old')) return 'nostalgic';
+    if (l.includes('happy')||l.includes('laugh')||l.includes('fun')) return 'lighthearted';
+    if (l.includes('dark')||l.includes('creepy')||l.includes('twist')) return 'dark';
+    if (l.includes('slow')||l.includes('think')||l.includes('quiet')||l.includes('beautiful')) return 'contemplative';
+    if (l.includes('love')||l.includes('romantic')||l.includes('heart')) return 'romantic';
+    if (l.includes('adventure')||l.includes('epic')||l.includes('quest')) return 'adventurous';
+    return null;
+  };
+
+  return (
+    <React.Fragment>
+      <div className="mood-selector">
+        <div className="mood-history-row">
+          <span className="mood-history-label">Recent moods</span>
+          {MOOD_HISTORY.map(id => {
+            const m = MOODS.find(x=>x.id===id);
+            return m ? (
+              <span className="mood-history-pill" key={id} onClick={()=>onMoodSelect(id)}>
+                {m.emoji} {m.label}
+              </span>
+            ) : null;
+          })}
+        </div>
+      </div>
+
+      <div className="mood-grid-section">
+        <div className="hub-title-row">
+          <span className="hub-title">Browse by Mood</span>
+          <span className="hub-more">All Moods ›</span>
+        </div>
+        <div className="mood-grid">
+          {MOODS.map((mood,i) => (
+            <div className="mood-card" key={mood.id}
+              onClick={()=>onMoodSelect(mood.id)}
+              style={{
+                background:`linear-gradient(145deg, ${mood.gradient[0]}, ${mood.gradient[1]}, ${mood.gradient[2]})`,
+                animation:`fadeIn 0.3s ease ${i*0.04}s both`,
+              }}>
+              <div className="mood-card-emoji">{mood.emoji}</div>
+              <div className="mood-card-label">{mood.label}</div>
+              <div className="mood-card-desc">{mood.description}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Featured rows on home */}
+      <HubRow title="Continue Watching" onItemClick={onItemClick}
+        items={Object.values(MEDIA).flat().filter(i=>i.progress>0&&i.progress<1).slice(0,8)} />
+      <HubRow title="Recently Added" onItemClick={onItemClick}
+        items={Object.values(MEDIA).flat().filter(i=>i.year>=2019).slice(0,8)} />
+    </React.Fragment>
+  );
+}
+
+function ExploreScreen({ moodId, onItemClick, onMoodSwitch }) {
+  const mood = MOODS.find(m=>m.id===moodId);
+  const items = MEDIA[moodId] || [];
+  const [blendMood, setBlendMood] = useState(null);
+
+  const blendItems = blendMood && MEDIA[blendMood] ? MEDIA[blendMood].slice(0,4) : [];
+  const displayItems = blendMood
+    ? [...items,...blendItems].sort((a,b)=>b.rel-a.rel)
+    : items;
+  const adjacentMoods = (mood?.adjacentMoods||[]).map(id=>MOODS.find(m=>m.id===id)).filter(Boolean);
+
+  if (!mood) return null;
+
+  return (
+    <React.Fragment>
+      <HeroBanner mood={mood} />
+
+      <div className="explore-header">
+        <span className="explore-emoji">{mood.emoji}</span>
+        <div className="explore-title-group">
+          <div className="explore-title">{mood.label}</div>
+          <div className="explore-desc">{mood.description}</div>
+        </div>
+      </div>
+
+      <BlendBar currentMood={moodId} onBlend={setBlendMood} active={blendMood} />
+
+      <HubRow
+        title={blendMood ? `${mood.label} × ${MOODS.find(m=>m.id===blendMood)?.label}` : `Best for ${mood.label}`}
+        items={displayItems}
+        count={`${displayItems.length} titles`}
+        onItemClick={onItemClick}
+      />
+
+      {!blendMood && items.length > 3 && (
+        <HubRow title="Deep Cuts" items={[...items].reverse().slice(0,4)} onItemClick={onItemClick} />
+      )}
+
+      <div className="adjacent-section">
+        <div className="adjacent-title">You might also be feeling...</div>
+        <div className="adjacent-grid">
+          {adjacentMoods.map((am,i) => (
+            <div className="adjacent-card" key={am.id}
+              onClick={()=>onMoodSwitch(am.id)}
+              style={{
+                background:`linear-gradient(145deg, ${am.gradient[0]}, ${am.gradient[1]})`,
+                animation:`fadeIn 0.3s ease ${i*0.06}s both`,
+              }}>
+              <div className="adjacent-emoji">{am.emoji}</div>
+              <div className="adjacent-label">{am.label}</div>
+              <div className="adjacent-desc">{am.description}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </React.Fragment>
+  );
+}
+
+function MediaModal({ item, onClose }) {
+  const [fitRating, setFitRating] = useState(0);
+  const [added, setAdded] = useState(false);
+
+  useEffect(() => {
+    const h = e => { if (e.key==='Escape') onClose(); };
+    window.addEventListener('keydown',h);
+    return () => window.removeEventListener('keydown',h);
+  }, [onClose]);
+
+  if (!item) return null;
+
+  return (
+    <div className="modal-backdrop" onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
+      <div className="modal-content">
+        <div className="modal-hero">
+          <div className="modal-hero-bg" style={{background:'linear-gradient(135deg, #1a1a2e, #0f3460, var(--bg-app))'}}>
+            {item.emoji}
+          </div>
+          <div className="modal-hero-gradient" />
+          <div className="modal-hero-gradient-bottom" />
+          <button className="modal-close" onClick={onClose}>✕</button>
+        </div>
+        <div className="modal-body">
+          <div className="modal-title">{item.title}</div>
+          <div className="modal-meta">
+            <span>{item.year}</span>
+            <span>·</span>
+            <span>{item.kind==='tv'?'TV Series':`${item.dur} min`}</span>
+            <span className="modal-meta-badge">{item.kind==='tv'?'TV-MA':'PG-13'}</span>
+          </div>
+          <div className="modal-mood-fit">◈ {Math.round(item.rel*100)}% mood fit</div>
+
+          <div className="modal-label">Why this fits</div>
+          <div className="modal-angles">
+            {item.angles.map((a,i) => <span className="modal-angle-tag" key={i}>{a}</span>)}
+          </div>
+
+          <div className="modal-label">Synopsis</div>
+          <p className="modal-synopsis">{item.synopsis}</p>
+
+          <div className="modal-label">Cast</div>
+          <p className="modal-cast">{item.cast.join(' · ')}</p>
+
+          <div className="modal-label">Watch on</div>
+          <div className="modal-streaming">
+            {item.streaming.map((s,i) => <button className="modal-stream-btn" key={i}>{s}</button>)}
+          </div>
+
+          <div className="modal-label">Did this match the mood?</div>
+          <div className="fit-rating">
+            {[1,2,3,4,5].map(n => (
+              <button className={`fit-star ${fitRating>=n?'active':''}`} key={n} onClick={()=>setFitRating(n)}>
+                {fitRating>=n?'★':'☆'}
+              </button>
+            ))}
+          </div>
+
+          <div className="modal-actions">
+            <button className="btn-play" onClick={()=>setAdded(!added)}>
+              {added?'✓ In Collection':'+ Add to Collection'}
+            </button>
+            <button className="btn-secondary">Mark as Watched</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function App() {
+  const [screen, setScreen] = useState('home');
+  const [activeMood, setActiveMood] = useState(null);
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [searchText, setSearchText] = useState('');
+
+  const handleMoodSelect = useCallback(id => {
+    if (id === null) {
+      setScreen('home');
+      setActiveMood(null);
+    } else {
+      setActiveMood(id);
+      setScreen('explore');
+      window.scrollTo({top:0,behavior:'smooth'});
+    }
+  }, []);
+
+  const handleHome = useCallback(() => {
+    setScreen('home');
+    setActiveMood(null);
+  }, []);
+
+  return (
+    <React.Fragment>
+      <Topbar screen={screen} onHome={handleHome}
+        searchValue={searchText} onSearch={setSearchText} />
+      <Sidebar screen={screen} activeMood={activeMood} onMoodSelect={handleMoodSelect} />
+      <div className="content">
+        {screen==='home' && (
+          <HomeScreen onMoodSelect={handleMoodSelect}
+            onItemClick={setSelectedItem} searchText={searchText} />
+        )}
+        {screen==='explore' && activeMood && (
+          <ExploreScreen moodId={activeMood}
+            onItemClick={setSelectedItem} onMoodSwitch={handleMoodSelect} />
+        )}
+      </div>
+      {selectedItem && <MediaModal item={selectedItem} onClose={()=>setSelectedItem(null)} />}
+    </React.Fragment>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
